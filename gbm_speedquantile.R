@@ -1,7 +1,7 @@
 rm(list = ls())
 library(doMC)
 library(foreach)
-
+library(gbm)
 
 speedDistribution <- function(trip)
 {
@@ -34,7 +34,7 @@ refData <- foreach(driver = iter(randomDrivers), .combine = rbind)%dopar%
 target = 1
 names(target) = "target"
 submission = NULL
-submission <- foreach(driver = iter(drivers), .combine = rbind) %dopar%
+submission <- foreach(driver = iter(drivers[1:10]), .combine = rbind) %dopar%
 {
   print(driver)
   dirPath = paste0("drivers/", driver, '/')
@@ -49,11 +49,11 @@ submission <- foreach(driver = iter(drivers), .combine = rbind) %dopar%
   train = as.data.frame(train)
   g = gbm(target ~ ., data=train, distribution = "bernoulli")
   currentData = as.data.frame(currentData)
-  p =predict(g, currentData, type = "response")
+  p =predict(g, currentData, n.trees = 10, type = "response")
   labels = sapply(1:200, function(x) paste0(driver,'_', x))
   result = cbind(labels, p)
 #   submission = rbind(submission, result)
 }
 
 colnames(submission) = c("driver_trip","prob")
-write.csv(submission, "kaggle/Axa/submission.csv", row.names=F, quote=F)
+write.csv(submission, "submissions/submission_gbm_speedquantile.csv", row.names=F, quote=F)

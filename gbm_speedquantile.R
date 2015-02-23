@@ -34,7 +34,7 @@ refData <- foreach(driver = iter(randomDrivers), .combine = rbind)%dopar%
 target = 1
 names(target) = "target"
 submission = NULL
-submission <- foreach(driver = iter(drivers[1:10]), .combine = rbind) %dopar%
+submission <- foreach(driver = iter(drivers), .combine = rbind) %dopar%
 {
   print(driver)
   dirPath = paste0("drivers/", driver, '/')
@@ -49,7 +49,7 @@ submission <- foreach(driver = iter(drivers[1:10]), .combine = rbind) %dopar%
   train = as.data.frame(train)
   g = gbm(target ~ ., data=train, distribution = "bernoulli")
   currentData = as.data.frame(currentData)
-  p =predict(g, currentData, n.trees = 10, type = "response")
+  p =predict(g, currentData, n.trees = 100, type = "response")
   labels = sapply(1:200, function(x) paste0(driver,'_', x))
   result = cbind(labels, p)
 #   submission = rbind(submission, result)

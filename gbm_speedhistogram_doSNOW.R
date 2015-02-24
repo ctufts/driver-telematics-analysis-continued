@@ -1,5 +1,5 @@
 rm(list = ls())
-library(doSNOW)
+library(doParallel)
 library(foreach)
 library(gbm)
 
@@ -22,16 +22,17 @@ ref.data = NULL
 target = 0
 names(target) = "target"
 # 
-cl <- makeCluster(4, type = "SOCK")
-registerDoSNOW(cl)
+cl <- makePSOCKcluster(4)
+registerDoParallel(cl)
 
-refData <- foreach(driver = iter(randomDrivers), .combine = 'rbind')%do%
+refData <- foreach(driver = iter(randomDrivers), .combine = 'rbind')%dopar%
 {
   dirPath = paste0("drivers/", driver, '/')
+  ref.data = NULL
   for(i in 1:200)
-  {
+  {    
     trip = read.csv(paste0(dirPath, i, ".csv"))
-    features = c(speedDistributionHistogram(trip), target, as.numeric(driver))
+    features = c(speedDistributionHistogram(trip), target)
     ref.data = rbind(ref.data, features)
   }
   ref.data

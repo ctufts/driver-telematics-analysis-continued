@@ -16,16 +16,14 @@ speedDistributionHistogram <- function(trip)
 
 set.seed(25)
 drivers = list.files("drivers")
-randomDrivers = sample(drivers, size = 8)
+randomDrivers = sample(drivers, size = 6)
 
 ref.data = NULL
 target = 0
 names(target) = "target"
 # 
-cl <- makeCluster(4, type = "SOCK")
-registerDoSNOW(cl)
 
-refData <- foreach(driver = iter(randomDrivers), .combine = 'rbind')%do%
+refData <- foreach(driver = iter(randomDrivers), .combine = rbind)%do%
 {
   dirPath = paste0("drivers/", driver, '/')
   for(i in 1:200)
@@ -43,7 +41,7 @@ target = 1
 names(target) = "target"
 submission = NULL
 submission <- foreach(driver = iter(drivers), .combine = rbind,
-                      .packages = "gbm") %dopar%
+                      .packages = "gbm") %do%
 {
   print(driver)
   dirPath = paste0("drivers/", driver, '/')
@@ -54,18 +52,18 @@ submission <- foreach(driver = iter(drivers), .combine = rbind,
     features = c(speedDistributionHistogram(trip), target)
     currentData = rbind(currentData, features)
   }
-  train = rbind(currentData, refData)
+  train = rbind(currentData, refData[refData[,22]!=as.numeric(driver),-22][1:1000,])
   train = as.data.frame(train)
   g = gbm(target ~ ., data=train,n.trees = n.trees, distribution = "bernoulli")
   currentData = as.data.frame(currentData)
   p =predict(g, currentData, n.trees = n.trees, type = "response")
   labels = sapply(1:200, function(x) paste0(driver,'_', x))
   result = cbind(labels, p)
-
+  
 }
 
-stopCluster(cl)
+
 
 colnames(submission) = c("driver_trip","prob")
 write.csv(submission,
-          "submissions/submission_gbm_speedhistogram.csv", row.names=F, quote=F)
+          "submissions/submission_gbm_speedhistogram_overlapRemoved.csv", row.names=F, quote=F)
